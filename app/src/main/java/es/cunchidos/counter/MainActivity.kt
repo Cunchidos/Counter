@@ -4,6 +4,8 @@
 
     import android.annotation.SuppressLint
     import android.os.Bundle
+    import android.os.PowerManager
+    import android.view.WindowManager
     import androidx.activity.ComponentActivity
     import androidx.activity.compose.setContent
     import androidx.compose.foundation.layout.*
@@ -22,13 +24,39 @@
     import es.cunchidos.counter.ui.theme.CounterTheme
 
     class MainActivity : ComponentActivity() {
+
+        private var wakeLock: PowerManager.WakeLock? = null
         override fun onCreate(savedInstanceState: Bundle?) {
             super.onCreate(savedInstanceState)
+
+            // Mantener la pantalla encendida
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
+            // Obtener el PowerManager
+            val powerManager = getSystemService(POWER_SERVICE) as PowerManager
+
+            // Crear un WakeLock de pantalla completa
+            wakeLock = powerManager.newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "MyApp:MyWakeLockTag").apply {
+                acquire(10*60*1000L /*10 minutos*/)
+            }
             setContent {
                 CounterTheme {
                     CounterScreen()
                 }
             }
+
+        }
+
+        override fun onDestroy() {
+            super.onDestroy()
+            // Liberar el WakeLock
+            if (wakeLock?.isHeld == true) {
+                wakeLock?.release()
+            }
+            wakeLock = null
+
+            // Remover el flag para mantener la pantalla encendida
+            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
     }
 
